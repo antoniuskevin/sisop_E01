@@ -22,61 +22,63 @@ Loop dasar:
 #include <stdlib.h>
 #include <unistd.h>
 #include <string.h>
+#include <sys/wait.h>
 
 #define PRAKSH_BUFFER_SIZE 1024
-#define PRAKSH_DELIM_PARSE "\0\n\t "
+#define PRAKSH_DELIM_PARSE " \0\n\t"
 
-char *read_command()
-{   
-    int index,
+char *ReadCommand()
+{  
+    int index = 0,
         bufferSize = PRAKSH_BUFFER_SIZE;
     char *bufferCommand;
     char c;
 
-    bufferCommand = malloc(sizeof(char) * 1024);
+    bufferCommand = malloc(sizeof(char) * bufferSize);
+
     while(1)
     {
         c = getchar();
-        
-        if (c != '\0' || c != '\n')
-        {
-            bufferCommand[index] = c;
-            index++;
-            if (index >= bufferSize)
-            {
-                bufferCommand = realloc(bufferCommand, bufferSize);
-                if (!bufferCommand)
-                {
-                    fprintf(stderr, "praksh: allocation error\n");
-                    exit(EXIT_FAILURE);
-                }
-            }
-        }
-        else
+        if (c == EOF || c == '\n')
         {
             bufferCommand[index] = '\0';
             break;
+        }
+        else
+        {
+            bufferCommand[index] = c;
+        }
+        index++;
+
+        if (index >= bufferSize) 
+        {
+            bufferSize += PRAKSH_BUFFER_SIZE;
+            bufferCommand = realloc(bufferCommand, bufferSize);
+            if (!bufferCommand)
+            {
+                fprintf(stderr, "praksh: realloc error\n");
+                exit(EXIT_FAILURE);
+            }
         }
     }
     return bufferCommand;
 }
 
-char** parsing(char *command)
+char** Parsing(char *command)
 {
     char *delim;
-    int bufferSize = 128;
-    char **args = malloc(sizeof(char) * bufferSize);
+    int bufferSize = PRAKSH_BUFFER_SIZE;
+    char **args = malloc(sizeof(char*) * bufferSize);
     char *token;
     int index = 0;
 
-    strcpy(delim, PRAKSH_DELIM_PARSE);
-    
-    token = strtok(command, delim);
+    delim = PRAKSH_DELIM_PARSE;
 
+    token = strtok(command, delim);
+    
     while (token != NULL)
     {
         args[index] = token;
-        token = strtok(NULL, delim);
         if (index >= bufferSize)
         {
             args = realloc(args, bufferSize);
@@ -86,13 +88,18 @@ char** parsing(char *command)
                 exit(EXIT_FAILURE);
             }
         }
+        token = strtok(NULL, delim);
+        index += 1;
     }
+    args[++index] = NULL;
     return args;
 }
 
-void execute(char **args)
+int Execute(char **args)
 {
-    pid_t procId;
+    pid_t procId, wpid;
+    int status;
+
     procId = fork();
     if (procId < 0)
     {
@@ -103,14 +110,34 @@ void execute(char **args)
     {
         if (execvp(args[0], args) == -1)
         {
-            // fprintf(
+            fprintf(stderr, "praksh: execvp: error\n");
+            exit(EXIT_FAILURE);
         }
     }
+    else
+    {
+        do {
+            wpid = waitpid(procId, &status, WUNTRACED);
+        } while (!WIFEXITED(status) && !WIFSIGNALED(status));
+    }
 
+    return 1;
 }
 
 void main_loop()
 {
+    char* line;
+    char** args;
+    int status;
+    do
+    {
+        printf("praksh >> ");
+        line = ReadCommand();
+        args = Parsing(line);
+        status = Execute(args);
+    } while(status);
+    free(line);
+    free(args);
 }
 
 int main()
