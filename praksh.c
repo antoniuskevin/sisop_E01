@@ -23,6 +23,8 @@ Loop dasar:
 #include <unistd.h>
 #include <string.h>
 #include <sys/wait.h>
+#include <signal.h>
+#include <limits.h>
 
 #define PRAKSH_BUFFER_SIZE 1024
 #define PRAKSH_DELIM_PARSE " \0\n\t"
@@ -39,7 +41,9 @@ char *ReadCommand()
     while(1)
     {
         c = getchar();
-        if (c == EOF || c == '\n')
+        if (c == EOF)
+            exit(EXIT_SUCCESS);
+        if (c == '\n')
         {
             bufferCommand[index] = '\0';
             break;
@@ -97,28 +101,35 @@ char** Parsing(char *command)
 
 int Execute(char **args)
 {
-    pid_t procId, wpid;
-    int status;
-
-    procId = fork();
-    if (procId < 0)
+    if (strcmp(args[0], "cd") == 0)
     {
-        fprintf(stderr, "praksh: forking: error\n");
-        exit(EXIT_FAILURE);
-    }
-    else if (procId == 0)
-    {
-        if (execvp(args[0], args) == -1)
-        {
-            fprintf(stderr, "praksh: execvp: error\n");
-            exit(EXIT_FAILURE);
-        }
+        chdir(args[1]);
     }
     else
     {
-        do {
-            wpid = waitpid(procId, &status, WUNTRACED);
-        } while (!WIFEXITED(status) && !WIFSIGNALED(status));
+        pid_t procId, wpid;
+        int status;
+
+        procId = fork();
+        if (procId < 0)
+        {
+            fprintf(stderr, "praksh: forking: error\n");
+            exit(EXIT_FAILURE);
+        }
+        else if (procId == 0)
+        {
+            if (execvp(args[0], args) == -1)
+            {
+                fprintf(stderr, "praksh: execvp: error\n");
+                exit(EXIT_FAILURE);
+            }
+        }
+        else
+        {
+            do {
+                wpid = waitpid(procId, &status, WUNTRACED);
+            } while (!WIFEXITED(status) && !WIFSIGNALED(status));
+        }
     }
 
     return 1;
@@ -129,8 +140,15 @@ void main_loop()
     char* line;
     char** args;
     int status;
+
+    char* pwd;
+    char buff[PATH_MAX + 1];
+
     do
     {
+        pwd = getcwd(buff, PATH_MAX + 1);
+        if (pwd != NULL)
+            printf(":> %s <:\n", pwd);
         printf("praksh >> ");
         line = ReadCommand();
         args = Parsing(line);
@@ -140,8 +158,15 @@ void main_loop()
     free(args);
 }
 
+void signalHandler(int sigNum)
+{
+    return;
+}
+
 int main()
 {
+    signal(SIGINT, signalHandler);
+    signal(SIGTSTP, signalHandler);
     main_loop();
     
     exit(EXIT_SUCCESS);
