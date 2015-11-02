@@ -148,7 +148,7 @@ void main_loop()
     char* line;
     char** args;
     int status;
-    int flag; // NOT FINISHED
+    int flag;
     char* pwd;
     char buff[PATH_MAX + 1];
 
