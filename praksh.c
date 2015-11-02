@@ -68,7 +68,7 @@ char *ReadCommand()
     return bufferCommand;
 }
 
-char** Parsing(char *command)
+char** Parsing(char *command, int *flag)
 {
     char *delim;
     int bufferSize = PRAKSH_BUFFER_SIZE;
@@ -95,11 +95,16 @@ char** Parsing(char *command)
         token = strtok(NULL, delim);
         index += 1;
     }
-    args[++index] = NULL;
+    args[index] = NULL;
+    if (strcmp(args[index-1], "&") == 0)
+    {
+        args[index-1] = NULL;
+        *flag = 1;
+    }
     return args;
 }
 
-int Execute(char **args)
+int Execute(char **args, int flag)
 {
     if (strcmp(args[0], "cd") == 0)
     {
@@ -126,9 +131,12 @@ int Execute(char **args)
         }
         else
         {
-            do {
-                wpid = waitpid(procId, &status, WUNTRACED);
-            } while (!WIFEXITED(status) && !WIFSIGNALED(status));
+            if (flag == 0)
+            {
+                do {
+                    wpid = waitpid(procId, &status, WUNTRACED);
+                } while (!WIFEXITED(status) && !WIFSIGNALED(status));
+            }
         }
     }
 
@@ -140,19 +148,20 @@ void main_loop()
     char* line;
     char** args;
     int status;
-
+    int flag; // NOT FINISHED
     char* pwd;
     char buff[PATH_MAX + 1];
 
     do
     {
+        flag = 0;
         pwd = getcwd(buff, PATH_MAX + 1);
         if (pwd != NULL)
             printf(":> %s <:\n", pwd);
         printf("praksh >> ");
         line = ReadCommand();
-        args = Parsing(line);
-        status = Execute(args);
+        args = Parsing(line, &flag);
+        status = Execute(args, flag);
     } while(status);
     free(line);
     free(args);
