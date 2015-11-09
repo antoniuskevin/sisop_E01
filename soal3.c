@@ -46,18 +46,19 @@ int main()
 {
     pthread_t threadid[2];
     
-    char **filenames;
+    char **filenames = (char **) malloc(sizeof(char*) * 3);
     int i;
     for (i = 0; i < 3; i++)
     {
-        filenames[i] = malloc(sizeof(char)*101);
-        printf("Masukkan nama file %d : ");
-        scanf("%[^\n]", filenames[i]);
+        printf("Masukkan nama file %d : ", i);
+        filenames[i] = (char *) malloc(sizeof(char)*101);
+        scanf("%s", filenames[i]);
+        fflush(stdin);
     }
 
     status = -1;
-    pthread_create(&threadid[0], NULL, thread_01, (void *));
-    pthread_create(&threadid[1], NULL, thread_02, );
+    pthread_create(&threadid[0], NULL, thread_01, NULL);
+    pthread_create(&threadid[1], NULL, thread_02, NULL);
     pthread_join(threadid[0], NULL);
     status = 1;
     //printf("main status = %d\n", status);
