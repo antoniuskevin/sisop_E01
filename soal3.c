@@ -3,49 +3,46 @@
 #include <unistd.h>
 #include <pthread.h>
 
+static long status;
+
 void *thread_01()
 {
-    printf("thread 1 started\n");
     FILE *f1, *f2;
-    char *line;
     f1 = fopen("file1.txt", "r");
     f2 = fopen("file2.txt", "a");
-    while (fscanf(f1, "%[^\n]s", line) != EOF)
+    while (1)
     {
-        fprintf(f2, "%s\n", line);
-        memset(line, NULL, sizeof(line));
-        printf("%s\n", line);
+        char line[101];
+        if (fgets(line, 100, f1) != NULL)
+        {
+            fprintf(f2, "%s", line);
+        }
+        else
+            break;
     }
     fclose(f1);
     fclose(f2);
-    printf("thread 2 stopped\n");
 }
 
-void *thread_02(void *vStatus)
+void *thread_02()
 {
-    printf("thread 2 started\n");
-    long iStatus = (long) vStatus;
-    char *line;
+    char line[101];
     FILE *f2, *f3;
     f2 = fopen("file2.txt", "r");
     f3 = fopen("file3.txt", "a");
-    while (fscanf(f2, "%[^\n]s", line) != EOF && iStatus != 1)
+    while (fgets(line, 100, f2) != NULL && status != 1)
     {
-        //printf("vStatus = %ld, iStatus = %ld\n", vStatus, iStatus);
         fprintf(f3, "%s\n", line);
-        iStatus = (long) vStatus;
     }
-    printf("thread 2 stopped\n");
 }
 
 int main()
 {
     pthread_t threadid[2];
-    static long status;
 
     status = -1;
     pthread_create(&threadid[0], NULL, thread_01, NULL);
-    pthread_create(&threadid[1], NULL, thread_02, (void *) status);
+    pthread_create(&threadid[1], NULL, thread_02, NULL);
     pthread_join(threadid[0], NULL);
     status = 1;
     return 0;
