@@ -39,6 +39,7 @@ void *thread_02(void *filenames)
     {
         //printf("Loop status = %d\n", status);
         fprintf(f3, "%s", line);
+        line[0] = '\0';
         //printf("file2 > file3 : %s", line);
     }
     //printf("thread 2 stopped\n");
