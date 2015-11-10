@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <unistd.h>
 #include <pthread.h>
+#include  <stdlib.h>
 
 int total=0;
 
@@ -12,11 +13,8 @@ void *run(void *args){
 	angka1=(int*)malloc(sizeof(int));
 	angka1 = (int*)args;
 	angka=(*angka1);
-	for(i=1;i<=(angka);i++){
-		if (angka==1){
-			break;
-		}
-		if((angka%i==0&&(i!=1&&i!=angka))){
+	for(i=2;i<=(angka);i++){
+		if((angka%i==0)&&(i!=angka)){
 			stat=1;
 			printf("%d adalah bilangan bukan prima\n",angka);
 			break;
@@ -35,24 +33,24 @@ int main(){
 	int threadnum=0;	
 	printf("Masukkan angka: ");
 	scanf("%d",&angka);
-	pthread_t thread [angka+1];
-	//jumlah prima dari 1 sampai angka
-       	for(i=1;i<=angka;i++){
+	pthread_t thread [angka+2];
+	//jumlah prima dari 2 sampai angka-1
+       	for(i=2;i<angka;i++){
 		conf=(int*)malloc(sizeof(int));
 		*conf=i;
 	       	stat=pthread_create(&thread[i], NULL, &run, (void*)conf);
-		if(stat){
-			printf("error\n");
+	/*	if(stat){
+			printf("thread creation error\n");
 		}
-		else{
-			printf("created\n");
+	else{
+			printf("thread %d created\n",i);
 			threadnum+=1;
-		}
+		}*/
 	}
-	for(i=1;i<=angka;i++){
+	for(i=2;i<angka;i++){
 		pthread_join(thread[i],NULL);
 	}
 	printf("Jumlah anda: %d\n",total);
-	printf("threadnum:%d\n",threadnum);
+//	printf("threadnum:%d\n",threadnum);
 	return 0;
 }
