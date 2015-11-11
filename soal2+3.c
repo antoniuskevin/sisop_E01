@@ -51,8 +51,9 @@ int jumlah_prima(){
 	for(i=2;i<angka;i++){
 		pthread_join(thread[i],NULL);
 	}
-	printf("Jumlah anda: %d\n",total);
+	printf("Jumlah bilangan prima kurang dar %d: %d\n",angka,total);
 //	printf("threadnum:%d\n",threadnum);
+	total=0;
 	return 0;
 }
 
